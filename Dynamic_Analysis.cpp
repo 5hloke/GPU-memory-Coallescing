@@ -12,14 +12,6 @@ void sortByIncreasingValue(vector<long long>& vec) {
     sort(vec.begin(), vec.end());
 }
 
-// Function to concatenate two vectors
-template<typename T>
-vector<T> concatVectors(const vector<T>& vec1, const vector<T>& vec2) {
-    vector<T> result = vec1;
-    result.insert(result.end(), vec2.begin(), vec2.end());
-    return result;
-}
-
 
 void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeSize) {
     for (size_t static_id = 0; static_id < memoryTrace.size(); ++static_id) {
@@ -88,7 +80,7 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
 int main() {
     MemoryTrace memoryTrace;
     int W = 16; // Warp scheduling size
-    size_t dataTypeSize = sizeof(long long); // Size of data type (assuming long long for example)
+    size_t dataTypeSize = sizeof(long long); 
     
     memoryTraceAnalysis(memoryTrace, W, dataTypeSize);
 
