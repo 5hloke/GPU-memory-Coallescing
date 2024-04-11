@@ -1,48 +1,59 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <map>
+#include <climits>
 
 using namespace std;
 
-// Define memory trace type - Really ugly right now, but I tried to match something that would be simlar to the psuedocode
-using MemoryTrace = vector<vector<vector<vector<vector<long long>>>>>;
+// Define memory trace type
+using MemoryTrace = std::map<size_t,                             // static id
+                        std::map<size_t,                         // dynamic id
+                            std::map<size_t,                     // tidy
+                                std::map<size_t,                 // tidz
+                                    std::map<size_t, long long>>>>>; // tidx => addr
 
 // Function to sort a vector by increasing value
 void sortByIncreasingValue(vector<long long>& vec) {
     sort(vec.begin(), vec.end());
 }
 
-
 void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeSize) {
-    for (size_t static_id = 0; static_id < memoryTrace.size(); ++static_id) {
-        long long minStride = LLONG_MAX, maxStride = 0, avgStride = 0, allStr = 0;
+    for (const auto& [static_id, dynamicMap] : memoryTrace) {
+        long long minStride = LLONG_MAX;
+        long long maxStride = 0;
+        long long avgStride = 0;
+        long long allStr = 0;
         vector<long long> allAddrs;
 
         // Iterate over dynamic ids
-        for (size_t dynamic_id = 0; dynamic_id < memoryTrace[static_id].size(); ++dynamic_id) {
+        for (const auto& [dynamic_id, tidyMap] : dynamicMap) {
             // Build linearized list of memory addresses accessed
             vector<long long> v;
-            for (size_t tidy = 0; tidy < memoryTrace[static_id][dynamic_id].size(); ++tidy) {
-                for (size_t tidz = 0; tidz < memoryTrace[static_id][dynamic_id][tidy].size(); ++tidz) {
-                    for (size_t tidx = 0; tidx < memoryTrace[static_id][dynamic_id][tidy][tidz].size(); ++tidx) {
-                        v.push_back(memoryTrace[static_id][dynamic_id][tidy][tidz][tidx]);
+            for (const auto& [tidy, tidzMap] : tidyMap) {
+                for (const auto& [tidz, tidxMap] : tidzMap) {
+                    for (const auto& [tidx, addr] : tidxMap) {
+                        v.push_back(addr);
                     }
                 }
             }
 
             // Sort W consecutive elements of V
             for (size_t c = 0; c < v.size(); c += W) {
-                // Creatin necessary subrange of vector, while ensuring it stays within bounds
-                sortByIncreasingValue(v.begin() + c, v.begin() + min(c + W, v.size()));
+                sortByIncreasingValue(v);
+                size_t end = min(c + W, v.size());
+                vector<long long>::iterator first = v.begin() + c;
+                vector<long long>::iterator last = v.begin() + end;
+                sort(first, last);
 
                 // Calculate stride and update min, max, avg strides
-                for (size_t j = 1; j < W; ++j) {
+                for (size_t j = 1; j < end - c; ++j) {
                     long long stride = v[c + j] - v[c + j - 1];
                     minStride = min(minStride, stride);
                     maxStride = max(maxStride, stride);
                     avgStride += stride;
                 }
-                avgStride=avgStride / W;
+                avgStride = avgStride / (end - c);
             }
 
             // Concatenate memory addresses to AllAddrs
@@ -55,23 +66,23 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
             allStr = max(allStr, allAddrs[i] - allAddrs[i - 1]);
         }
 
-// TODO:: Get load/store type based on how memory trace is provided 
-        cout << "Static id: " << static_id << ", Load/Store type: "; 
-        cout << "Min Stride: " << minStride << ", Max Stride: " << maxStride << ", Avg Stride: " << avgStride  << endl;
-        
+        // TODO: Get load/store type based on how memory trace is provided
+        cout << "Static id: " << static_id << ", Load/Store type: ";
+        cout << "Min Stride: " << minStride << ", Max Stride: " << maxStride << ", Avg Stride: " << avgStride << endl;
+
         if (maxStride <= dataTypeSize) {
             cout << "Coalesced" << endl;
         } else {
             cout << "Uncoalesced" << endl;
-        
+
             if (allStr > dataTypeSize) {
                 cout << "Accesses cannot be all coalesced" << endl;
             } else {
                 cout << "Suggest thread geometry transformations" << endl;
-                // TODO:: Adjust once we know load/store from memory trace
-                if (instruction == "load") {
-                    cout << "Suggest also shared memory usage" << endl;
-                }
+                // TODO: Adjust once we know load/store from memory trace
+                // if (instruction == "load") {
+                //     cout << "Suggest shared memory usage" << endl;
+                // }
             }
         }
     }
@@ -79,9 +90,21 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
 
 int main() {
     MemoryTrace memoryTrace;
+    memoryTrace[31][0][0][0][0] = 30066082304;
+    memoryTrace[34][0][0][0][0] = 30066081792;
+    memoryTrace[31][1][0][0][0] = 30066082320;
+    memoryTrace[34][1][0][0][0] = 30066081796;
+    memoryTrace[31][2][0][0][0] = 30066082336;
+    memoryTrace[34][2][0][0][0] = 30066081800;
+    memoryTrace[31][0][0][1][0] = 30066082320;
+    memoryTrace[34][0][0][1][0] = 30066081796;
+    memoryTrace[31][1][0][1][0] = 30066082336;
+    memoryTrace[34][1][0][1][0] = 30066081800;
+    memoryTrace[31][2][0][1][0] = 30066082352;
+    memoryTrace[34][2][0][1][0] = 30066081804;
     int W = 16; // Warp scheduling size
     size_t dataTypeSize = sizeof(long long); 
-    
+
     memoryTraceAnalysis(memoryTrace, W, dataTypeSize);
 
     return 0;
