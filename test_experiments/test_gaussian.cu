@@ -84,7 +84,7 @@ int main(){
     dim3 block(block_size);
     dim3 grid(grid_size);
 
-    int d2_block = 2;
+    int d2_block = 4;
     int d2_grid = (n + d2_block - 1) / d2_block;
 
     dim3 block2(d2_block, d2_block);
@@ -116,7 +116,7 @@ int main(){
         for (int j = 0; j < i; j++){
             x[n-i-1] -=* (matrix+n*(n-i-1)+(n-j-1)) * x[n-j-1];
 		}
-		x[n-i-1]=x[n-i-1]/ *(a+n*(n-i-1)+(n-i-1));
+		x[n-i-1]=x[n-i-1]/ *(matrix+n*(n-i-1)+(n-i-1));
 
     }
 
