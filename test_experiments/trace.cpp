@@ -33,7 +33,7 @@ public:
                     threadidy = (i / bdimx) % bdimy; // Computing y ID
                     
                     std::cout << blockidx << " " << blockidy << " " << blockidz << " " << threadidx << " " << threadidy << " " << threadidz << " " << event.instruction->toString() << " ";
-                    // Printing active threads information
+                    // Printing active threads information (Assuming that there will be as many memory addresses as active threads)
                     std::cout << event.memory_addresses[i] << std::endl;
 
                 }
