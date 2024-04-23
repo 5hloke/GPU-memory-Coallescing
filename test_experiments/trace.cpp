@@ -4,6 +4,10 @@
 #include "ocelot/trace/interface/TraceEvent.h"
 #include <iostream>
 
+namespace ID
+{
+    int static_ID = 0
+}
 class TraceGenerator : public trace::TraceGenerator
 {
 public:
@@ -33,14 +37,19 @@ public:
 
                 	threadidx = i % bdimx; // Computing x ID
                 	threadidy = (i / bdimx) % bdimy; // Computing y ID
-
-                	std::cout << blockidx << " " << blockidy << " " << blockidz << " " << threadidx << " " << threadidy << " " << threadidz << " " << event.instruction->toString() << " ";
+                    '''
+                    The format of the print is:
+                    blockidx blockidy blockidz threadidx threadyidx threadidz ID::static_id instruction memory_addresses
+                    '''
+                	std::cout << blockidx << " " << blockidy << " " << blockidz << " " << threadidx << " " << threadidy << " " << threadidz << " " << ID::static_id << " "<< event.instruction->toString() << " ";
                 	// Printing active threads information (Assuming that there will be as many memory addresses as active threads)
-                    	std::cout << vec[memory_counter] << '\n';
-                    	memory_counter++;
+                    std::cout << vec[memory_counter] << '\n';
+                    memory_counter++;
+                    
 
             	}
         	}
+            ID::static_ID++;
     	}
     }
 };
