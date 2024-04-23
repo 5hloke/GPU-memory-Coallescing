@@ -1,0 +1,3 @@
+[submodule "gpuocelot"]
+	path = gpuocelot
+	url = https://github.com/gtcasl/gpuocelot.git
