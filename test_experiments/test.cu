@@ -3,20 +3,20 @@
 #include <cuda_runtime.h>
 
 using namespace std;
-
-__device__ double atomicAdd(double* address, double val)
-{
-    unsigned long long int* address_as_ull =
-                             (unsigned long long int*)address;
-    unsigned long long int old = *address_as_ull, assumed;
-    do {
-        assumed = old;
-old = atomicCAS(address_as_ull, assumed,
-                        __double_as_longlong(val +
-                               __longlong_as_double(assumed)));
-    } while (assumed != old);
-    return __longlong_as_double(old);
-}
+// Uncomment for Finns architecture
+// __device__ double atomicAdd(double* address, double val)
+// {
+//     unsigned long long int* address_as_ull =
+//                              (unsigned long long int*)address;
+//     unsigned long long int old = *address_as_ull, assumed;
+//     do {
+//         assumed = old;
+// old = atomicCAS(address_as_ull, assumed,
+//                         __double_as_longlong(val +
+//                                __longlong_as_double(assumed)));
+//     } while (assumed != old);
+//     return __longlong_as_double(old);
+// }
 
 __global__ void stencil(double* A, double* B, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -25,7 +25,7 @@ __global__ void stencil(double* A, double* B, int n) {
     if (i >= n || j >= n) {
         return;
     }
-
+    // printf idx idy idx 
     if (i == 0 || i == n - 1 || j == 0 || j == n - 1) {
         B[i * n + j] = A[i * n + j];
         return;
@@ -67,8 +67,8 @@ __global__ void verification(double* A, double* sum, double* a, double* b, int n
     }
 }
 
-int main(int argc, char** argv) {
-    int n = atoi(argv[1]);
+int sampleKernel(int size) {
+    int n = size;
     int t = 10;
 
     double* A = new double[n * n];

@@ -52,8 +52,10 @@ void create_system(float* matrix, float *b,  int n){
 }
 
 
-int main(){
+int sampleKernel(){
+
     int n = 10;
+
     float* matrix = new float[n * n];
     float* b = new float[n];
     float* m = new float[n * n];
@@ -93,9 +95,9 @@ int main(){
     // Now launch kernels
     for (int t=0; t < (n-1); t++) {
 
-		kernel1<<<grid, block>>>(d_m , d_a, d_b,n,t);
+		kernel1<<<grid, block>>>(d_m , d_matrix, n, t);
 		cudaThreadSynchronize();
-		kernel2<<<grid2,block2>>>(d_m ,d_a ,d_b ,n, n-t,t);
+		kernel2<<<grid2,block2>>>(d_m ,d_matrix ,d_b ,n, n-t,t);
 		cudaThreadSynchronize();
 
 	}
