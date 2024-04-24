@@ -3,20 +3,20 @@
 #include <cuda_runtime.h>
 
 using namespace std;
-// Uncomment for Finns architecture
-// __device__ double atomicAdd(double* address, double val)
-// {
-//     unsigned long long int* address_as_ull =
-//                              (unsigned long long int*)address;
-//     unsigned long long int old = *address_as_ull, assumed;
-//     do {
-//         assumed = old;
-// old = atomicCAS(address_as_ull, assumed,
-//                         __double_as_longlong(val +
-//                                __longlong_as_double(assumed)));
-//     } while (assumed != old);
-//     return __longlong_as_double(old);
-// }
+
+__device__ double atomicAdd(double* address, double val)
+{
+    unsigned long long int* address_as_ull =
+                             (unsigned long long int*)address;
+    unsigned long long int old = *address_as_ull, assumed;
+    do {
+        assumed = old;
+old = atomicCAS(address_as_ull, assumed,
+                        __double_as_longlong(val +
+                               __longlong_as_double(assumed)));
+    } while (assumed != old);
+    return __longlong_as_double(old);
+}
 
 __global__ void stencil(double* A, double* B, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -67,8 +67,8 @@ __global__ void verification(double* A, double* sum, double* a, double* b, int n
     }
 }
 
-int sampleKernel(int size) {
-    int n = size;
+int sample_kernel (int arg) {
+    int n = arg;
     int t = 10;
 
     double* A = new double[n * n];
@@ -145,3 +145,4 @@ int sampleKernel(int size) {
 
     return 0;
 }
+
