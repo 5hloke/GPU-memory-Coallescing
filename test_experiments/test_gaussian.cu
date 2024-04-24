@@ -1,29 +1,51 @@
-#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <cuda_runtime.h>
+#define N 4 // Size of the matrix
 
+__global__ void gaussianElimination(float *A, float *B) {
+    int idx = threadIdx.x;
+    int idy = threadIdx.y;
+    int bidx = blockIdx.x;
+    int tidy = threadIdx.y;
 
-// here create a matrix to apply the gaussian reduction on
-__global__ void kernel1 (float *m_cuda, float *a_cuda, int Size, int t){
+    __shared__ float shared_A[N][N+1];
+    __shared__ float shared_B[N];
 
-    if(threadIdx.x + blockIdx.x * blockDim.x >= Size-1-t) return;
-	*(m_cuda+Size*(blockDim.x*blockIdx.x+threadIdx.x+t+1)+t) = *(a_cuda+Size*(blockDim.x*blockIdx.x+threadIdx.x+t+1)+t) / *(a_cuda+Size*t+t);
+    // Load data into shared memory
+    shared_A[idy][idx] = A[bidx * N * N + idy * N + idx];
+    shared_B[idy] = B[bidx * N + idy];
+    __syncthreads();
 
+    // Gaussian elimination
+    for (int k = 0; k < N; k++) {
+        if (idy > k) {
+            float ratio = shared_A[idy][k] / shared_A[k][k];
+            for (int j = k; j < N + 1; j++) {
+                shared_A[idy][j] -= ratio * shared_A[k][j];
+            }
+        }
+        __syncthreads();
+    }
+
+    // Back substitution
+    if (idy == N - 1) {
+        shared_B[N-1] = shared_A[N-1][N] / shared_A[N-1][N-1];
+        for (int i = N - 2; i >= 0; i--) {
+            float sum = 0.0;
+            for (int j = i + 1; j < N; j++) {
+                sum += shared_A[i][j] * shared_B[j];
+            }
+            shared_B[i] = (shared_A[i][N] - sum) / shared_A[i][i];
+        }
+    }
+    __syncthreads();
+
+    // Write back the result
+    B[bidx * N + tidy] = shared_B[tidy];
 }
 
-__global__ void kernel2 (float *m_cuda, float *a_cuda, float *b_cuda,int Size, int j1, int t){
-    if(threadIdx.x + blockIdx.x * blockDim.x >= Size-1-t) return;
-	if(threadIdx.y + blockIdx.y * blockDim.y >= Size-t) return;
-	
-	int xidx = blockIdx.x * blockDim.x + threadIdx.x;
-	int yidx = blockIdx.y * blockDim.y + threadIdx.y;
-	
-	a_cuda[Size*(xidx+1+t)+(yidx+t)] -= m_cuda[Size*(xidx+1+t)+t] * a_cuda[Size*t+(yidx+t)];
-	if(yidx == 0){
-		b_cuda[xidx+1+t] -= m_cuda[Size*(xidx+1+t)+(yidx+t)] * b_cuda[t];
-	}
-
-}
 void create_system(float* matrix, float *b,  int n){
 
     int i,j;
@@ -40,94 +62,49 @@ void create_system(float* matrix, float *b,  int n){
     }
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            matrix[i * n + j] = pow(sin((i * i) + j), 2) + cos(i - j);
+            matrix[i*n+j]=coe[n-1-i+j];
         }
     }
     for (int i = 0; i < n; i++) {
         b[i] = 0;
-        for (int j = 0; j < n; j++) {
-            b[i] = 1.0;
-        }
     }
 }
 
 
-int sampleKernel(){
+void gaussianKernel(){
 
-    int n = 10;
+    float *h_A, *h_B; // Host matrices
+    float *d_A, *d_B; // Device matrices
 
-    float* matrix = new float[n * n];
-    float* b = new float[n];
-    float* m = new float[n * n];
+    // Allocate memory on the host
+    h_A = (float *)malloc(N * N * sizeof(float));
+    h_B = (float *)malloc(N * sizeof(float));
 
-    create_system(matrix, b, n);
-    
-    //initialize the multiplication matrix
-    for (int i = 0; i < n*n; i++){
-        m[i] = 0.0;
-    }
+    create_system(h_A, h_B, N);
 
-    // Now CUDA setup
-    float* d_matrix;
-    float* d_b;
-    float* d_m;
+    // Allocate memory on the device
+    cudaMalloc((void **)&d_A, N * N * sizeof(float));
+    cudaMalloc((void **)&d_B, N * sizeof(float));
 
-    cudaMalloc(&d_matrix, n * n * sizeof(float));
-    cudaMalloc(&d_b, n * sizeof(float));
-    cudaMalloc(&d_m, n * n * sizeof(float));
-    cudaMemcpy(d_matrix, matrix, n * n * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_b, b, n * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_m, m, n * n * sizeof(float), cudaMemcpyHostToDevice);
+    // Copy data from host to device
+    cudaMemcpy(d_A, h_A, N * N * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, h_B, N * sizeof(float), cudaMemcpyHostToDevice);
 
-    // Block and grid setup 
-    int block_size = 64;
-    int grid_size = (n + block_size - 1) / block_size;
+    // Define grid and block dimensions
+    dim3 block(N, N);
+    dim3 grid(1, 1);
 
-    dim3 block(block_size);
-    dim3 grid(grid_size);
+    // Launch kernel
+    gaussianElimination<<<grid, block>>>(d_A, d_B);
 
-    int d2_block = 4;
-    int d2_grid = (n + d2_block - 1) / d2_block;
+    // Copy data from device to host
+    cudaMemcpy(h_B, d_B, N * sizeof(float), cudaMemcpyDeviceToHost);
 
-    dim3 block2(d2_block, d2_block);
-    dim3 grid2(d2_grid, d2_grid);
+    // Free device memory
+    cudaFree(d_A);
+    cudaFree(d_B);
 
-    // Now launch kernels
-    for (int t=0; t < (n-1); t++) {
-
-		kernel1<<<grid, block>>>(d_m , d_matrix, n, t);
-		cudaThreadSynchronize();
-		kernel2<<<grid2,block2>>>(d_m ,d_matrix ,d_b ,n, n-t,t);
-		cudaThreadSynchronize();
-
-	}
-
-    // Copy back the results
-    cudaMemcpy(m, d_m, n * n * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(b, d_b, n * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(matrix, d_matrix, n * n * sizeof(float), cudaMemcpyDeviceToHost);
-
-    cudaFree(d_matrix);
-    cudaFree(d_b);
-    cudaFree(d_m);
-
-    // Now back propagate the results
-    float* x = new float[n];
-    for (int i = 0; i < n; i++){
-        x[n-i-1]=b[n-i-1];
-        for (int j = 0; j < i; j++){
-            x[n-i-1] -=* (matrix+n*(n-i-1)+(n-j-1)) * x[n-j-1];
-		}
-		x[n-i-1]=x[n-i-1]/ *(matrix+n*(n-i-1)+(n-i-1));
-
-    }
-
-    delete[] matrix;
-    delete[] b;
-    delete[] m;
-
-
-    
-
-    return 0;
-}
+    // Free host memory
+    free(h_A);
+    free(h_B);
+} 

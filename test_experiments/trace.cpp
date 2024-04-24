@@ -55,12 +55,13 @@ public:
 };
 
 extern void sampleKernel(int size);
+extern void gaussianKernel();
 
 int main()
 {
     	TraceGenerator generator;
     	ocelot::addTraceGenerator( generator );
 
-    	sampleKernel(10);
+    	gaussianKernel();
 }
 
