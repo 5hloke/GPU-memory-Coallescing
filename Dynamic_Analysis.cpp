@@ -18,6 +18,8 @@ void sortByIncreasingValue(vector<long long>& vec) {
     sort(vec.begin(), vec.end());
 }
 
+
+
 void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeSize) {
     for (const auto& [static_id, dynamicMap] : memoryTrace) {
         long long minStride = LLONG_MAX;
@@ -88,20 +90,39 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
     }
 }
 
-int main() {
-    MemoryTrace memoryTrace;
-    memoryTrace[31][0][0][0][0] = 30066082304;
-    memoryTrace[34][0][0][0][0] = 30066081792;
-    memoryTrace[31][1][0][0][0] = 30066082320;
-    memoryTrace[34][1][0][0][0] = 30066081796;
-    memoryTrace[31][2][0][0][0] = 30066082336;
-    memoryTrace[34][2][0][0][0] = 30066081800;
-    memoryTrace[31][0][0][1][0] = 30066082320;
-    memoryTrace[34][0][0][1][0] = 30066081796;
-    memoryTrace[31][1][0][1][0] = 30066082336;
-    memoryTrace[34][1][0][1][0] = 30066081800;
-    memoryTrace[31][2][0][1][0] = 30066082352;
-    memoryTrace[34][2][0][1][0] = 30066081804;
+void readTracesFromFile(MemoryTrace& memoryTrace, const std::string& filename) {
+    std::ifstream file(filename);
+    std::string line;
+    
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file." << std::endl;
+        return;
+    }
+
+    while (getline(file, line)) {
+        std::istringstream iss(line);
+        size_t grid_x, grid_y, grid_z, tid_x, tid_y, tid_z, is_ld, current_kept_static_id, dynamic_id, address;
+        if (!(iss >> grid_x >> grid_y >> grid_z >> tid_x >> tid_y >> tid_z >> is_ld >> current_kept_static_id >> dynamic_id >> address)) {
+            std::cerr << "Error parsing line: " << line << std::endl;
+            continue;
+        }
+
+        memoryTrace[current_kept_static_id][dynamic_id][tid_y][tid_z][tid_x] = address;
+    }
+
+    file.close();
+    std::cout << "Finished reading all lines." << std::endl;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
+        return 1;
+    }
+
+    MemoryTrace memoryTrace; // maximum size is 2^64 -1 so we should be fine
+    processBatch(memoryTrace, argv[1]);
+
     int W = 16; // Warp scheduling size
     size_t dataTypeSize = sizeof(long long); 
 
@@ -109,3 +130,25 @@ int main() {
 
     return 0;
 }
+
+// int main() {
+//     MemoryTrace memoryTrace;
+//     memoryTrace[31][0][0][0][0] = 30066082304;
+//     memoryTrace[34][0][0][0][0] = 30066081792;
+//     memoryTrace[31][1][0][0][0] = 30066082320;
+//     memoryTrace[34][1][0][0][0] = 30066081796;
+//     memoryTrace[31][2][0][0][0] = 30066082336;
+//     memoryTrace[34][2][0][0][0] = 30066081800;
+//     memoryTrace[31][0][0][1][0] = 30066082320;
+//     memoryTrace[34][0][0][1][0] = 30066081796;
+//     memoryTrace[31][1][0][1][0] = 30066082336;
+//     memoryTrace[34][1][0][1][0] = 30066081800;
+//     memoryTrace[31][2][0][1][0] = 30066082352;
+//     memoryTrace[34][2][0][1][0] = 30066081804;
+    // int W = 16; // Warp scheduling size
+    // size_t dataTypeSize = sizeof(long long); 
+
+    // memoryTraceAnalysis(memoryTrace, W, dataTypeSize);
+
+//     return 0;
+// }
