@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <map>
 #include <climits>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -74,6 +76,7 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
 
         if (maxStride <= dataTypeSize) {
             cout << "Coalesced" << endl;
+            // insert counter here
         } else {
             cout << "Uncoalesced" << endl;
 
@@ -121,7 +124,7 @@ int main(int argc, char* argv[]) {
     }
 
     MemoryTrace memoryTrace; // maximum size is 2^64 -1 so we should be fine
-    processBatch(memoryTrace, argv[1]);
+    readTracesFromFile(memoryTrace, argv[1]);
 
     int W = 16; // Warp scheduling size
     size_t dataTypeSize = sizeof(long long); 
