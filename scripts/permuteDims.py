@@ -1,54 +1,94 @@
-import re
 import sys
+import re
 
 """Script for permuting the dimensions of CUDA code via string search/replace.
-Command line args: <host code file> <.cu file> <leading dimension \in {"x", "y", "z"}
+Command line args: <host code file> <.cu file> <name of kernel> <leading dimension \in {"x", "y", "z"}> <new host output> <new .cu output>
 """
 
-if sys.argv[4] == 'x':
-    exit
+host_code = sys.argv[1]
+cu_code = sys.argv[2]
+kernel = sys.argv[3]
+lead_dim = sys.argv[4]
+new_host = sys.argv[5]
+new_cu = sys.argv[6]
 
-# Permute dims in host code launch:
-with open(sys.argv[1]) as code:
-    with open("lead" + sys.argv[4] + "_" + sys.argv[1], "w") as new_file:
-        for line in code.readlines():
-            is_block = line.startswith("dim3 dimBlock(")
-            is_grid = line.startswith("dim3 dimGrid(")
-            if is_block or is_grid:
-                # line = line[line.find('(') + 1:line.find(')')]
-                # line_split = line.split(',')
+
+def transform_host(code):
+    output = ""
+    for line in code:
+        if line.lstrip().startswith(kernel + "<<<"):
+            dims = line.lstrip()[len(kernel) + 3:]
+            dims = dims[:dims.find(">>>")].split(',')
+            grid_name, block_name = dims[0].strip(), dims[1].strip()
+            output += f"std::swap({grid_name}.x, {grid_name}.{lead_dim});\n"
+            output += f"std::swap({block_name}.x, {block_name}.{lead_dim});\n"
+            output += line
+            output += f"std::swap({grid_name}.x, {grid_name}.{lead_dim});\n"
+            output += f"std::swap({block_name}.x, {block_name}.{lead_dim});\n"
+        else:
+            output += line
                 
-                # if sys.argv[4] == 'y':
-                #     line_split[0], line_split[1] = line_split[1], line_split[0]
-                # elif sys.argv[4] == 'z':
-                #     line_split[0], line_split[2] = line_split[2], line_split[0]
-                    
-                # line = ", ".join(line_split) + ");"
-                
-                # if is_block:
-                #     line = "dim3 dimBlock(" + line
-                # else:
-                #     line = "dim3 dimGrid(" + line
-                
-                pattern = r'\((\w+), (\w+), (\w+)\)'
-                if sys.argv[4] == 'y':
-                    replacement = r'(\2, \1, \3)'
-                elif sys.argv[4] == 'z':
-                    replacement = r'(\3, \2, \1)'
-                else:
-                    raise ValueError("Dim must be x, y, or z")
-                line = re.sub(pattern, replacement, line)
-                
-            new_file.write(line + "\n")
+    return output
+
+
+def find_closing_bracket(s):
+    # Takes a str s which begins with a open { and finds its close
+    assert s[0] == "{"
+    bracket_count = 0
+    
+    for i, c in enumerate(s):
+        if c == "{":
+            bracket_count += 1
+        elif c == "}":
+            bracket_count -= 1
+            if bracket_count == 0:
+                return i
             
-with open(sys.argv[2]) as code:
-    with open("lead" + sys.argv[4] + "_" + sys.argv[2], "w") as new_file:
-        code = code.read()
-        pattern = r'(%tid)\.(x|' + sys.argv[4] + ')'
+def find_kernel_usage(code):
+    pattern = r"void\s*" + re.escape(kernel)
 
-        # Define the replacement pattern with captured groups swapped
-        replacement = lambda match: match.group(1) + '.'  + (sys.argv['4'] if match.group(2) == 'x' else 'x')
+    # Use re.search() to find the pattern
+    match = re.search(pattern, code)
 
-        # Perform the find and replace using regex
-        new_text = re.sub(pattern, replacement, code)
-        new_file.write(new_text)
+    if match:
+        return match.start()
+    else:
+        return -1
+
+
+def transform_cu(code):
+    kernel_loc = find_kernel_usage(code)
+    if not kernel_loc:
+        raise ModuleNotFoundError("Could not find a reference to the kernel in given .cu file")
+    
+    while kernel_loc != -1:
+        statement = code[kernel_loc:code[kernel_loc:].find(";") + kernel_loc]
+        fn_begin = statement.find("{")
+        if fn_begin != -1:
+            fn_begin += kernel_loc
+            fn_end = find_closing_bracket(code[fn_begin:]) + fn_begin
+            break
+        kernel_loc = find_kernel_usage(code[kernel_loc + 1:]) + kernel_loc + 1
+        
+    fn = code[fn_begin:fn_end]
+    fn = fn.replace("threadIdx.x", "$$$$$$$$$PLACEHOLDER$$$$$$$$$$")
+    fn = fn.replace(f"threadIdx.{lead_dim}", "threadIdx.x")
+    fn = fn.replace("$$$$$$$$$PLACEHOLDER$$$$$$$$$$", f"threadIdx.{lead_dim}")
+    return code[:fn_begin] + fn + code[fn_end:]
+
+
+if host_code == cu_code:
+    with open(host_code) as code:
+        code_lines = code.readlines()
+        with open(new_host, "w") as f:
+            f.write(transform_cu(transform_host(code_lines)))
+else:
+    with open(host_code) as code:
+        code_lines = code.readlines()
+        with open(new_host, "w") as f:
+            f.write(transform_host(code_lines))
+
+    with open(cu_code) as code:
+        with open(new_cu, "w") as f:
+            f.write(transform_cu(code.read()))
+        
