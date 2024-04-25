@@ -23,46 +23,100 @@ void sortByIncreasingValue(vector<long long>& vec) {
 
 
 void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeSize) {
-    for (const auto& [static_id, dynamicMap] : memoryTrace) {
-        long long minStride = LLONG_MAX;
-        long long maxStride = 0;
-        long long avgStride = 0;
-        long long allStr = 0;
-        vector<long long> allAddrs;
+    // for (const auto& [static_id, dynamicMap] : memoryTrace) {
+    //     long long minStride = LLONG_MAX;
+    //     long long maxStride = 0;
+    //     long long avgStride = 0;
+    //     long long allStr = 0;
+    //     vector<long long> allAddrs;
 
-        // Iterate over dynamic ids
-        for (const auto& [dynamic_id, tidyMap] : dynamicMap) {
-            // Build linearized list of memory addresses accessed
-            vector<long long> v;
-            for (const auto& [tidy, tidzMap] : tidyMap) {
-                for (const auto& [tidz, tidxMap] : tidzMap) {
-                    for (const auto& [tidx, addr] : tidxMap) {
-                        v.push_back(addr);
-                    }
+    //     // Iterate over dynamic ids
+    //     for (const auto& [dynamic_id, tidyMap] : dynamicMap) {
+    //         // Build linearized list of memory addresses accessed
+    //         vector<long long> v;
+    //         for (const auto& [tidy, tidzMap] : tidyMap) {
+    //             for (const auto& [tidz, tidxMap] : tidzMap) {
+    //                 for (const auto& [tidx, addr] : tidxMap) {
+    //                     v.push_back(addr);
+    //                 }
+    //             }
+    //         }
+
+    //         // Sort W consecutive elements of V
+    //         for (size_t c = 0; c < v.size(); c += W) {
+    //             sortByIncreasingValue(v);
+    //             size_t end = min(c + W, v.size());
+    //             vector<long long>::iterator first = v.begin() + c;
+    //             vector<long long>::iterator last = v.begin() + end;
+    //             sort(first, last);
+
+    //             // Calculate stride and update min, max, avg strides
+    //             for (size_t j = 1; j < end - c; ++j) {
+    //                 long long stride = v[c + j] - v[c + j - 1];
+    //                 minStride = min(minStride, stride);
+    //                 maxStride = max(maxStride, stride);
+    //                 avgStride += stride;
+    //             }
+    //             avgStride = avgStride / (end - c);
+    //         }
+
+    //         // Concatenate memory addresses to AllAddrs
+    //         allAddrs.insert(allAddrs.end(), v.begin(), v.end());
+    //     }
+
+
+    for (auto const& pair : memoryTrace) {
+    auto const& static_id = pair.first;
+    auto const& dynamicMap = pair.second;
+    long long minStride = LLONG_MAX;
+    long long maxStride = 0;
+    long long avgStride = 0;
+    long long allStr = 0;
+    vector<long long> allAddrs;
+
+    // Iterate over dynamic ids
+    for (auto const& inner_pair : dynamicMap) {
+        auto const& dynamic_id = inner_pair.first;
+        auto const& tidyMap = inner_pair.second;
+        // Build linearized list of memory addresses accessed
+        vector<long long> v;
+        for (auto const& inner_inner_pair : tidyMap) {
+            auto const& tidy = inner_inner_pair.first;
+            auto const& tidzMap = inner_inner_pair.second;
+            for (auto const& inner_inner_inner_pair : tidzMap) {
+                auto const& tidz = inner_inner_inner_pair.first;
+                auto const& tidxMap = inner_inner_inner_pair.second;
+                for (auto const& deepest_pair : tidxMap) {
+                    auto const& tidx = deepest_pair.first;
+                    auto const& addr = deepest_pair.second;
+                    v.push_back(addr);
                 }
             }
-
-            // Sort W consecutive elements of V
-            for (size_t c = 0; c < v.size(); c += W) {
-                sortByIncreasingValue(v);
-                size_t end = min(c + W, v.size());
-                vector<long long>::iterator first = v.begin() + c;
-                vector<long long>::iterator last = v.begin() + end;
-                sort(first, last);
-
-                // Calculate stride and update min, max, avg strides
-                for (size_t j = 1; j < end - c; ++j) {
-                    long long stride = v[c + j] - v[c + j - 1];
-                    minStride = min(minStride, stride);
-                    maxStride = max(maxStride, stride);
-                    avgStride += stride;
-                }
-                avgStride = avgStride / (end - c);
-            }
-
-            // Concatenate memory addresses to AllAddrs
-            allAddrs.insert(allAddrs.end(), v.begin(), v.end());
         }
+
+        // Sort W consecutive elements of V
+        for (size_t c = 0; c < v.size(); c += W) {
+            sortByIncreasingValue(v);
+            size_t end = min(c + W, v.size());
+            vector<long long>::iterator first = v.begin() + c;
+            vector<long long>::iterator last = v.begin() + end;
+            sort(first, last);
+
+            // Calculate stride and update min, max, avg strides
+            for (size_t j = 1; j < end - c; ++j) {
+                long long stride = v[c + j] - v[c + j - 1];
+                minStride = min(minStride, stride);
+                maxStride = max(maxStride, stride);
+                avgStride += stride;
+            }
+            avgStride = avgStride / (end - c);
+        }
+
+        // Concatenate memory addresses to AllAddrs
+        allAddrs.insert(allAddrs.end(), v.begin(), v.end());
+    }
+
+
 
         // Check if entire memory space accessed is contiguous
         sortByIncreasingValue(allAddrs);
