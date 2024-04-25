@@ -63,58 +63,59 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
     //         // Concatenate memory addresses to AllAddrs
     //         allAddrs.insert(allAddrs.end(), v.begin(), v.end());
     //     }
-
+    long long coalesced_counter = 0;
+    long long uncoalesced_counter = 0;
 
     for (auto const& pair : memoryTrace) {
-    auto const& static_id = pair.first;
-    auto const& dynamicMap = pair.second;
-    long long minStride = LLONG_MAX;
-    long long maxStride = 0;
-    long long avgStride = 0;
-    long long allStr = 0;
-    vector<long long> allAddrs;
+        auto const& static_id = pair.first;
+        auto const& dynamicMap = pair.second;
+        long long minStride = LLONG_MAX;
+        long long maxStride = 0;
+        long long avgStride = 0;
+        long long allStr = 0;
+        vector<long long> allAddrs;
 
-    // Iterate over dynamic ids
-    for (auto const& inner_pair : dynamicMap) {
-        auto const& dynamic_id = inner_pair.first;
-        auto const& tidyMap = inner_pair.second;
-        // Build linearized list of memory addresses accessed
-        vector<long long> v;
-        for (auto const& inner_inner_pair : tidyMap) {
-            auto const& tidy = inner_inner_pair.first;
-            auto const& tidzMap = inner_inner_pair.second;
-            for (auto const& inner_inner_inner_pair : tidzMap) {
-                auto const& tidz = inner_inner_inner_pair.first;
-                auto const& tidxMap = inner_inner_inner_pair.second;
-                for (auto const& deepest_pair : tidxMap) {
-                    auto const& tidx = deepest_pair.first;
-                    auto const& addr = deepest_pair.second;
-                    v.push_back(addr);
+        // Iterate over dynamic ids
+        for (auto const& inner_pair : dynamicMap) {
+            auto const& dynamic_id = inner_pair.first;
+            auto const& tidyMap = inner_pair.second;
+            // Build linearized list of memory addresses accessed
+            vector<long long> v;
+            for (auto const& inner_inner_pair : tidyMap) {
+                auto const& tidy = inner_inner_pair.first;
+                auto const& tidzMap = inner_inner_pair.second;
+                for (auto const& inner_inner_inner_pair : tidzMap) {
+                    auto const& tidz = inner_inner_inner_pair.first;
+                    auto const& tidxMap = inner_inner_inner_pair.second;
+                    for (auto const& deepest_pair : tidxMap) {
+                        auto const& tidx = deepest_pair.first;
+                        auto const& addr = deepest_pair.second;
+                        v.push_back(addr);
+                    }
                 }
             }
-        }
 
-        // Sort W consecutive elements of V
-        for (size_t c = 0; c < v.size(); c += W) {
-            sortByIncreasingValue(v);
-            size_t end = min(c + W, v.size());
-            vector<long long>::iterator first = v.begin() + c;
-            vector<long long>::iterator last = v.begin() + end;
-            sort(first, last);
+            // Sort W consecutive elements of V
+            for (size_t c = 0; c < v.size(); c += W) {
+                sortByIncreasingValue(v);
+                size_t end = min(c + W, v.size());
+                vector<long long>::iterator first = v.begin() + c;
+                vector<long long>::iterator last = v.begin() + end;
+                sort(first, last);
 
-            // Calculate stride and update min, max, avg strides
-            for (size_t j = 1; j < end - c; ++j) {
-                long long stride = v[c + j] - v[c + j - 1];
-                minStride = min(minStride, stride);
-                maxStride = max(maxStride, stride);
-                avgStride += stride;
+                // Calculate stride and update min, max, avg strides
+                for (size_t j = 1; j < end - c; ++j) {
+                    long long stride = v[c + j] - v[c + j - 1];
+                    minStride = min(minStride, stride);
+                    maxStride = max(maxStride, stride);
+                    avgStride += stride;
+                }
+                avgStride = avgStride / (end - c);
             }
-            avgStride = avgStride / (end - c);
-        }
 
-        // Concatenate memory addresses to AllAddrs
-        allAddrs.insert(allAddrs.end(), v.begin(), v.end());
-    }
+            // Concatenate memory addresses to AllAddrs
+            allAddrs.insert(allAddrs.end(), v.begin(), v.end());
+        }
 
 
 
@@ -131,9 +132,10 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
         if (maxStride <= dataTypeSize) {
             cout << "Coalesced" << endl;
             // insert counter here
+            ++coalesced_counter;
         } else {
             cout << "Uncoalesced" << endl;
-
+            ++uncoalesced_counter;
             if (allStr > dataTypeSize) {
                 cout << "Accesses cannot be all coalesced" << endl;
             } else {
@@ -145,6 +147,8 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
             }
         }
     }
+
+    cout << "Coalesced accesses: " << coalesced_counter << ", uncoalesced accesses: " << uncoalesced_counter << endl;
 }
 
 void readTracesFromFile(MemoryTrace& memoryTrace, const std::string& filename) {

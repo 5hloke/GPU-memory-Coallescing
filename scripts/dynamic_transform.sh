@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euxo pipefail
+# set -euxo pipefail
 
 host_code=$1
 if [ $# -eq 2 ]; then
@@ -13,12 +13,12 @@ else
     exit 1
 fi
 
-g++ -std=c++0x src/trace.cpp -c -l
-g++ -std=c++0x src/Dynamic_Analysis.cpp -o Dynamic_Analysis
+g++ -std=c++11 src/trace.cpp -c # should already be compiled
+g++ -std=c++11 src/Dynamic_Analysis.cpp -o Dynamic_Analysis # should already be compiled
 
-mkdir tmp
+# mkdir tmp
 for dim in "x" "y" "z"; do
-    python3 scripts/permuteDims.py host_code cu_code kernel dim "tmp/${dim}_${host_code##*.}" "tmp/${dim}_${cu_code##*.}"
+    python3 scripts/permuteDims.py ${host_code} ${cu_code} ${kernel} ${dim} "tmp/${dim}_${host_code##*.}" "tmp/${dim}_${cu_code##*.}"
     nvcc -c -arch=sm_20 -o "${dim}.o" $1
     g++ -o tracegen test.o trace.o -locelot
     ./tracegen > tmp/ocelot.trace # Not sure exactly what this command should be yet
@@ -28,4 +28,5 @@ for dim in "x" "y" "z"; do
         mv "tmp/${dim}_${cu_code##*.}" cu_code
     fi
 
-rm -r tmp
+# rm -r tmp
+done

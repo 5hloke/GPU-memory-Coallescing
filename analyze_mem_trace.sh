@@ -12,7 +12,7 @@ file="${2:-}"
 # Function to compile and run the trace generation
 compile_and_run() {
     echo "Compiling with g++ for trace.cpp..."
-    g++ -std=c++0x src/trace.cpp  -o custom_trace.o -c -l
+    g++ -std=c++0x src/trace.cpp  -o custom_trace.o -c
     echo "Compiling with nvcc for $file..."
     nvcc -c -arch=sm_20 "${file}.cu"
     echo "Linking and generating executable..."
