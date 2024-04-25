@@ -50,8 +50,10 @@ def insert_trace_call(file_path, main_host_function):
                 idx_of_end_of_main_function = i
                 break
         # Insert the external function declaration and the call
-        new_content.insert(idx_of_end_of_main_function, f"\t{main_host_function}(); // added via script\n")
-        new_content.insert(idx_of_main_function, f"extern void {main_host_function}(); // added via script\n")
+        # new_content.insert(idx_of_end_of_main_function, f"\t{main_host_function}(); // added via script\n")
+        # new_content.insert(idx_of_main_function, f"extern void {main_host_function}(); // added via script\n")
+        new_content.insert(idx_of_end_of_main_function, "\t{}(); // added via script\n".format(main_host_function))
+        new_content.insert(idx_of_main_function, "extern void {}(); // added via script\n".format(main_host_function))
         file.seek(0)
         file.truncate()
         file.writelines(new_content)

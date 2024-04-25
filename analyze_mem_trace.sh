@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check for the minimum number of arguments
-if [[ $# -lt 1 ]]; then
+if [[   $# -lt 1 ]]; then
     echo "Usage: $0 main_function [file] [--custom-trace custom_trace_file]"
     exit 1
 fi
@@ -12,7 +12,7 @@ file="${2:-}"
 # Function to compile and run the trace generation
 compile_and_run() {
     echo "Compiling with g++ for trace.cpp..."
-    g++ -std=c++0x src/trace.cpp -c -l
+    g++ -std=c++0x src/trace.cpp  -o custom_trace.o -c -l
     echo "Compiling with nvcc for $file..."
     nvcc -c -arch=sm_20 "${file}.cu"
     echo "Linking and generating executable..."

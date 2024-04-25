@@ -1,3 +1,5 @@
+# testing here!!!!
+
 import sys
 import re
 
@@ -22,7 +24,7 @@ def main(file_url, outfile_url):
                     kept_static_ids_set.add(static_id)
                     current_kept_static_id += 1
                 
-                dynamic_id_key = f"{current_kept_static_id}.{tid_x}.{tid_y}.{tid_z}"
+                dynamic_id_key = "{}.{}.{}.{}".format(current_kept_static_id, tid_x, tid_y, tid_z)
 
                 if dynamic_id_key not in dynamic_id_map:
                     dynamic_id_map[dynamic_id_key] = 0
@@ -32,7 +34,7 @@ def main(file_url, outfile_url):
                 # print(current_kept_static_id, dynamic_id_key)
                 is_ld = 0 if instruction == "ld" else 1
 
-                result = f"{grid_x} {grid_y} {grid_z} {tid_x} {tid_y} {tid_z} {is_ld} {current_kept_static_id} {dynamic_id_map[dynamic_id_key]} {address}\n"
+                result = "{} {} {} {} {} {} {} {} {} {}\n".format(grid_x, grid_y, grid_z, tid_x, tid_y, tid_z, is_ld, current_kept_static_id, dynamic_id_map[dynamic_id_key], address)
 
                 lines_modified.append(result)
 
