@@ -67,7 +67,7 @@ __global__ void verification(double* A, double* sum, double* a, double* b, int n
     }
 }
 
-int sample_kernel (int arg) {
+int sampleKernel (int arg) {
     int n = arg;
     int t = 10;
 
@@ -101,7 +101,7 @@ int sample_kernel (int arg) {
     cudaEventRecord(start);
 
     // Do t iterations of stencil updates
-    dim3 block(32, 32);
+    dim3 block(10, 20);
     dim3 grid((n + block.x - 1) / block.x, (n + block.y - 1) / block.y);
 
     for (int i = 0; i < t; i++) {
