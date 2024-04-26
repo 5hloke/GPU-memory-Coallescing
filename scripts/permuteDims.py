@@ -20,10 +20,10 @@ def transform_host(code):
             dims = line.lstrip()[len(kernel) + 3:]
             dims = dims[:dims.find(">>>")].split(',')
             grid_name, block_name = dims[0].strip(), dims[1].strip()
-            # output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
+            output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
             output += "std::swap({0}.x, {0}.{1});\n".format(block_name, lead_dim)
             output += line
-            # output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
+            output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
             output += "std::swap({0}.x, {0}.{1});\n".format(block_name, lead_dim)
         else:
             output += line
