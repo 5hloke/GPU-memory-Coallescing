@@ -22,7 +22,7 @@ def transform_host(code):
             grid_name, block_name = dims[0].strip(), dims[1].strip()
             # output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
             output += "std::swap({0}.x, {0}.{1});\n".format(block_name, lead_dim)
-            # output += line
+            output += line
             # output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
             output += "std::swap({0}.x, {0}.{1});\n".format(block_name, lead_dim)
         else:
