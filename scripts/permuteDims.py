@@ -20,10 +20,10 @@ def transform_host(code):
             dims = line.lstrip()[len(kernel) + 3:]
             dims = dims[:dims.find(">>>")].split(',')
             grid_name, block_name = dims[0].strip(), dims[1].strip()
-            output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
+            # output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
             output += "std::swap({0}.x, {0}.{1});\n".format(block_name, lead_dim)
-            output += line
-            output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
+            # output += line
+            # output += "std::swap({0}.x, {0}.{1});\n".format(grid_name, lead_dim)
             output += "std::swap({0}.x, {0}.{1});\n".format(block_name, lead_dim)
         else:
             output += line
@@ -71,9 +71,9 @@ def transform_cu(code):
         kernel_loc = find_kernel_usage(code[kernel_loc + 1:]) + kernel_loc + 1
         
     fn = code[fn_begin:fn_end]
-    fn = fn.replace("threadIdx.x", "$$$$$$$$$PLACEHOLDER$$$$$$$$$$")
-    fn = fn.replace("threadIdx.{0}".format(lead_dim), "threadIdx.x")
-    fn = fn.replace("$$$$$$$$$PLACEHOLDER$$$$$$$$$$", "threadIdx.{0}".format(lead_dim))
+    # fn = fn.replace("threadIdx.x", "$$$$$$$$$PLACEHOLDER$$$$$$$$$$")
+    # fn = fn.replace("threadIdx.{0}".format(lead_dim), "threadIdx.x")
+    # fn = fn.replace("$$$$$$$$$PLACEHOLDER$$$$$$$$$$", "threadIdx.{0}".format(lead_dim))
     return code[:fn_begin] + fn + code[fn_end:]
 
 
