@@ -71,9 +71,9 @@ def transform_cu(code):
         kernel_loc = find_kernel_usage(code[kernel_loc + 1:]) + kernel_loc + 1
         
     fn = code[fn_begin:fn_end]
-    # fn = fn.replace("threadIdx.x", "$$$$$$$$$PLACEHOLDER$$$$$$$$$$")
-    # fn = fn.replace("threadIdx.{0}".format(lead_dim), "threadIdx.x")
-    # fn = fn.replace("$$$$$$$$$PLACEHOLDER$$$$$$$$$$", "threadIdx.{0}".format(lead_dim))
+    fn = fn.replace("threadIdx.x", "$$$$$$$$$PLACEHOLDER$$$$$$$$$$")
+    fn = fn.replace("threadIdx.{0}".format(lead_dim), "threadIdx.x")
+    fn = fn.replace("$$$$$$$$$PLACEHOLDER$$$$$$$$$$", "threadIdx.{0}".format(lead_dim))
     return code[:fn_begin] + fn + code[fn_end:]
 
 
