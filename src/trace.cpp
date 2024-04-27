@@ -54,7 +54,7 @@ public:
     }
 };
 
-// extern void sampleKernel(int size);
+extern void sampleKernel(int size);
 // extern void gaussianKernel(int s);
 
 // extern void sample_host_function(); // added via script
@@ -63,6 +63,6 @@ int main()
 	
 	TraceGenerator generator;
 	ocelot::addTraceGenerator( generator );
-
+	sampleKernel(2);
     	// gaussianKernel(16);
 }
