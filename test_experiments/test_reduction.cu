@@ -7,13 +7,13 @@ using namespace std;
 __global__ void kernel(float *A, float *x, float *tmp){
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    // add shared memory array here
-    __shared__ float shared[10];
+    // // add shared memory array here
+    // __shared__ float shared[10];
 
     // shared[i] = 0.0f;
     if (i<N)
     {
-        shared[i] = 0.0f;
+        // shared[i] = 0.0f;
         for(int j=0; j < N; j++){
             tmp[i] += A[i *N + j] * x[j];
         }
