@@ -86,7 +86,7 @@ def transform_cu(code):
     fn_end = find_closing_bracket(fn[fn_begin:])+ fn_begin
 
     # Need to create the entire string for the new for loop
-    fn10 = "for(int k=0;k<blockDim.x;k++)\{"+ y +" [583_i] += 583_shared[583_i * blockDim.x + k];\}\n"
+    fn10 = "for(int k=0;k<blockDim.x;k++)\{" + y + " [583_i] " + pm + "= 583_shared[583_i * blockDim.x + k];\}\n"
 
     fn = fn[fn_end:]
 
