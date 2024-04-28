@@ -38,6 +38,15 @@ def find_kernel_usage(code):
         return match.start()
     else:
         return -1
+    
+    
+def get_op_and_global_addrs(fn):
+    # This should match anything of the reduction form y[i] += A[j] * x[k] given in the paper and get y, plus/minus, A, k
+    pattern = r'\s*([a-zA-Z0-9_]+)\[[0-9]+\]\s*([\+-])=\s*([a-zA-Z0-9_]+)\[[a-zA-Z0-9_]+\]\s*\*\s*([a-zA-Z0-9_]+)\[[a-zA-Z0-9_]+\]\s*;'
+    matches = re.findall(pattern, fn)
+
+    # Assume just one match
+    return matches[0]
 
 
 def transform_cu(code):
@@ -55,6 +64,8 @@ def transform_cu(code):
         kernel_loc = find_kernel_usage(code[kernel_loc + 1:]) + kernel_loc + 1
         
     fn = code[fn_begin:fn_end]
+    
+    y, pm, A, x = tuple(get_op_and_global_addrs(fn))
 
     fn0 = fn[0] + "__shared__ float 583_shared[blockDim.x * blockDim.x];\n"
     #S[i*blockDim.x+j] = A[index1]
@@ -64,8 +75,8 @@ def transform_cu(code):
     fn4 = "583_index1= 583_t1 + 583_t2 + 583_i * "+str(N)+" + 583_j;\n"
     fn5 = "583_index2 = (583_block_id * blockDim.x + 583_j) %% " + str(N) + ";\n"
     fn6 = "583_index3 = (583_block_id * blockDim.x * blockDim.x) / " + str(N) + " + 583_i;\n" 
-    fn7 ="583_shared[583_i*blockDim.x + 583_j] = " + global_base_of_first_load + "[583_index1];\n"
-    fn8 = "583_shared[583_i*blockDim.x + 583_j] *= " +  global_base_of_sec_load + "[583_index2];\n__syncthreads();\n"
+    fn7 ="583_shared[583_i*blockDim.x + 583_j] = " + A + "[583_index1];\n"
+    fn8 = "583_shared[583_i*blockDim.x + 583_j] *= " +  x + "[583_index2];\n__syncthreads();\n"
     fn = fn[1:]
     pattern = r'(?:[;\s])for(?:\s|()'
     matches = re.findall(pattern, fn)[0][0]
@@ -75,7 +86,7 @@ def transform_cu(code):
     fn_end = find_closing_bracket(fn[fn_begin:])+ fn_begin
 
     # Need to create the entire string for the new for loop
-    fn10 = "for(int k=0;k<blockDim.x;k++)\{"+ global_store_name+" [583_i] += 583_shared[583_i * blockDim.x + k];\}\n"
+    fn10 = "for(int k=0;k<blockDim.x;k++)\{"+ y +" [583_i] += 583_shared[583_i * blockDim.x + k];\}\n"
 
     fn = fn[fn_end:]
 
