@@ -74,9 +74,9 @@ def transform_cu(code):
     fn = fn.replace("threadIdx.x", "$$$$$$$$$PLACEHOLDER$$$$$$$$$$")
     fn = fn.replace("threadIdx.{0}".format(lead_dim), "threadIdx.x")
     fn = fn.replace("$$$$$$$$$PLACEHOLDER$$$$$$$$$$", "threadIdx.{0}".format(lead_dim))
-    # fn = fn.replace("blockDim.x", "$$$$$$$$$PLACEHOLDER$$$$$$$$$$")
-    # fn = fn.replace("blockDim.{0}".format(lead_dim), "blockDim.x")
-    # fn = fn.replace("$$$$$$$$$PLACEHOLDER$$$$$$$$$$", "blockDim.{0}".format(lead_dim))
+    fn = fn.replace("blockDim.x", "$$$$$$$$$PLACEHOLDER$$$$$$$$$$")
+    fn = fn.replace("blockDim.{0}".format(lead_dim), "blockDim.x")
+    fn = fn.replace("$$$$$$$$$PLACEHOLDER$$$$$$$$$$", "blockDim.{0}".format(lead_dim))
     return code[:fn_begin] + fn + code[fn_end:]
 
 
