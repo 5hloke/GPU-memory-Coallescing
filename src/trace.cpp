@@ -63,6 +63,6 @@ int main()
 	
 	TraceGenerator generator;
 	ocelot::addTraceGenerator( generator );
-	sampleKernel(2);
+	sampleKernel(16);
     	// gaussianKernel(16);
 }

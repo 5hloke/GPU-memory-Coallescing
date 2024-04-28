@@ -101,7 +101,7 @@ int sampleKernel (int arg) {
     cudaEventRecord(start);
 
     // Do t iterations of stencil updates
-    dim3 block(2, 1);
+    dim3 block(8, 32);
     dim3 grid((n + block.x - 1) / block.x, (n + block.y - 1) / block.y);
 
     for (int i = 0; i < t; i++) {

@@ -3,20 +3,24 @@
 #include <cuda_runtime.h>
 
 using namespace std;
-#define N 10
+#define N 17
 __global__ void kernel(float *A, float *x, float *tmp){
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     // // add shared memory array here
+    __shared__ float shared[10*10];
     // __shared__ float shared[10];
 
     // shared[i] = 0.0f;
     if (i<N)
     {
         // shared[i] = 0.0f;
+        __syncthreads();
         for(int j=0; j < N; j++){
             tmp[i] += A[i *N + j] * x[j];
         }
+        __syncthreads();
+
     }
 }
 
@@ -40,9 +44,11 @@ void reductionKernel(){
     cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_x, x, N * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_tmp, tmp, N * sizeof(float), cudaMemcpyHostToDevice);
-    int blockSize = 256;
+    int blockSize = 16;
+    dim3 dimBlock(blockSize, blockSize);
     int numBlocks = (N + blockSize - 1) / blockSize;
-    kernel<<<numBlocks, blockSize>>>(d_A, d_x, d_tmp);
+    dim3 dimGrid(numBlocks, numBlocks);
+    kernel<<<dimGrid, dimBlock>>>(d_A, d_x, d_tmp);
     cudaMemcpy(tmp, d_tmp, N * sizeof(float), cudaMemcpyDeviceToHost);
     float sum = 0.0f;
     for(int i = 0; i < N; i++){
