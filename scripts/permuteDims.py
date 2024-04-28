@@ -28,7 +28,7 @@ def transform_host(code):
         else:
             output += line
                 
-    return output
+    return "#include <algorithm>\n#include <utility>\n" + output
 
 
 def find_closing_bracket(s):

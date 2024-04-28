@@ -1,32 +1,53 @@
 #!/bin/sh
 # set -euxo pipefail
 
-host_code=$1
-if [ $# -eq 2 ]; then
-    cu_code=$1
-    kernel=$2
-elif [ $# -eq 3 ]; then
-    cu_code=$2
-    kernel=$3
+# Script for running profiling and outputting the best geometry as a new kernel
+# Currently only works if you name your .cu's main entry function as sampleKernel
+
+if [ $# -eq 4 ]; then
+    code=$1
+    out=$2
+    main=$3
+    kernel=$4
 else
-    echo "Usage: ./dynamic_transform.sh <host code file (leave out if same as kernel)> <kernel file> <kernel name>"
+    echo "Usage: bash dynamic_transform.sh <input kernel file> <output kernel file> <main name> <kernel name>"
+    exit 1
+fi
+
+if [ code = out ]; then
+    echo "input and output filenames must be different"
     exit 1
 fi
 
 g++ -std=c++11 src/trace.cpp -c # should already be compiled
 g++ -std=c++11 src/Dynamic_Analysis.cpp -o Dynamic_Analysis # should already be compiled
 
-# mkdir tmp
+mkdir tmp
 for dim in "x" "y" "z"; do
-    python3 scripts/permuteDims.py ${host_code} ${cu_code} ${kernel} ${dim} "tmp/${dim}_${host_code##*.}" "tmp/${dim}_${cu_code##*.}"
-    nvcc -c -arch=sm_20 -o "${dim}.o" $1
-    g++ -o tracegen test.o trace.o -locelot
-    ./tracegen > tmp/ocelot.trace # Not sure exactly what this command should be yet
-    python3 scripts/clean_ocelot.py tmp/ocelot.trace "tmp/${dim}${kernel}.trace"
-    if [[ $(./Dynamic_Analysis ${dim}) == *"Coalesced"* ]]; then
-        mv "tmp/${dim}_${host_code##*.}" host_code
-        mv "tmp/${dim}_${cu_code##*.}" cu_code
-    fi
+    permutedfile="tmp/${dim}.${code##*.}"
+    echo "Permuting geometry of kernel: ${kernel} in ${code}..."
+    echo "Leading with dimension ${dim}..."
+    python3 scripts/permuteDims.py ${code} ${code} ${kernel} ${dim} ${permutedfile} ${permutedfile}
+    echo "Finished permuting, result stored in ${permutedfile}"
 
-# rm -r tmp
+    outfile="tmp/${dim}_trace.txt"
+    echo "Calling trace analysis script..."
+    bash analyze_mem_trace.sh ${main} ${permutedfile} ${out_file}
+    echo "Finished tracing, result stored in ${outfile}"
+
+    echo "Running dynamic analysis on ${permutedfile}..."
+    if [[ $(./Dynamic_Analysis $$) == *"Coalesced"* ]]; then
+        echo "Memory was coalesced!"
+        mv ${permutedfile} ${out}
+    else
+        echo "Not coalesced"
+    fi
 done
+
+rm -r tmp
+exit 0
+
+# nvcc -c -arch=sm_20 -o "${dim}.o" $1
+# g++ -o tracegen "${dim}.o" trace.o -locelot
+# ./tracegen > tmp/ocelot.trace # Not sure exactly what this command should be yet
+# python3 scripts/clean_ocelot.py tmp/ocelot.trace "tmp/${dim}${kernel}.trace"
