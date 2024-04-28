@@ -27,7 +27,11 @@ class StaticTransform : public KernelPass
 
     void runOnKernel(ir::IRKernel& k){
     std::cout << k.cfg()->size() << std::endl;
-
+    // Assumption we know the gemoetry of the kernel
+    int T = 16;
+    int N = 10;
+    // create shared memory buffers of size TxT 
+    ir::PTXInstruction* instruction = new ir::PTXInstruction(ir::PTXInstruction::Mov, ir::PTXOperand(ir::PTXOperand::v4, ir::PTXOperand::u32), ir::PTXOperand("0"), ir::PTXOperand("0"));
     auto beg = k.cfg()->begin();
     auto end = k.cfg()->end();
     for(; beg != end; beg++){
@@ -35,28 +39,15 @@ class StaticTransform : public KernelPass
         auto instructions = block.instructions.begin();
         auto iend = block.instructions.end();
         for(; instructions != iend; instructions++){
-            auto instruction = *instructions;
-            std::cout << instruction->toString() << "\n";
+            auto instruction = static_cast<ir::PTXInstruction*>(*instructions);
+            // if (instruction->isMemoryInstruction()){
+            std::cout << "Memory Instruction: " << instruction->toString() << "\n";
+
+            // }
+            // std::cout << instruction->toString() << "\n";
         }
     }
-    std::cout << "Hola Sir" << std::endl;
-    Analysis* dfg_structure = getAnalysis("DataflowGraphAnalysis");
-    assert(dfg_structure != 0);
 
-     analysis::DataflowGraph& dfg =* static_cast<analysis::DataflowGraph*>(dfg_structure);
-
-     analysis::DataflowGraph::iterator block = ++dfg.begin();
-     analysis::DataflowGraph::iterator blockEnd = --dfg.end();
-     for (; block != blockEnd; block++) {
-       std::cout << "New Basic Block:\n";
-       auto i = block->block()->instructions.begin();
-       auto e = block->block()->instructions.end();
-       while (i != e) {
-         ir::PTXInstruction* inst = static_cast<ir::PTXInstruction*>(*i);
-         std::cout << inst->toString() << std::endl;
-         i++;
-       }
-     }
         // std::cout << "Hola Sir" << std::endl;
         // auto analysis = getAnalysis("LoopAnalysis");
         // // // std::cout << "Blocks: "<< analysis->blocks.size() << "\n";
