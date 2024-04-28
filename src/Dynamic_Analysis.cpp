@@ -97,7 +97,7 @@ void memoryTraceAnalysis(const MemoryTrace &memoryTrace, int W, size_t dataTypeS
 
             // Sort W consecutive elements of V
             for (size_t c = 0; c < v.size(); c += W) {
-                sortByIncreasingValue(v);
+                //sortByIncreasingValue(v);
                 size_t end = min(c + W, v.size());
                 vector<long long>::iterator first = v.begin() + c;
                 vector<long long>::iterator last = v.begin() + end;
